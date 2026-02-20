@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "generated_at": "2026-02-10T12:40:20Z",
+    "script": "collect_verified.sh",
+    "deep_requested": "false",
+    "state_dir": "/root/.openclaw",
+    "config_path": "/root/.openclaw/openclaw.json",
+    "workspace_dir": ""
+  },
+  "commands": {
+    "os.uname": {"cmd": "uname -a", "out": "Linux ubuntu-4gb-hel1-1 6.8.0-94-generic #96-Ubuntu SMP PREEMPT_DYNAMIC Fri Jan  9 20:36:55 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux"},
+    "os.release": {"cmd": "cat /etc/os-release", "out": "PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nNAME="Ubuntu"\nVERSION_ID="24.04"\nVERSION="24.04.3 LTS (Noble Numbat)"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL="https://www.ubuntu.com/"\nSUPPORT_URL="https://help.ubuntu.com/"\nBUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"\nPRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo"},
+    "user.id": {"cmd": "id", "out": "uid=0(root) gid=0(root) groups=0(root)"},
+    "user.whoami": {"cmd": "whoami", "out": "root"},
+    "env.virt": {"cmd": "systemd-detect-virt", "out": "kvm"},
+    "config.summary": {"cmd": "config_summary:missing", "out": "config file not found"},
+    "net.listening": {"cmd": "ss -tulpen", "out": "Netid State  Recv-Q Send-Q     Local Address:Port  Peer Address:PortProcess                                                                                                                                                       \nudp   UNCONN 0      0                0.0.0.0:5353       0.0.0.0:*    users:(("clawdbot-gatewa",pid=169868,fd=26)) ino:2193480 sk:e cgroup:/user.slice/user-0.slice/user@0.service/app.slice/clawdbot-gateway.service <->          \nudp   UNCONN 0      0                0.0.0.0:5353       0.0.0.0:*    users:(("clawdbot-gatewa",pid=169868,fd=24)) ino:2193479 sk:f cgroup:/user.slice/user-0.slice/user@0.service/app.slice/clawdbot-gateway.service <->          \nudp   UNCONN 0      0             127.0.0.54:53         0.0.0.0:*    users:(("systemd-resolve",pid=673,fd=16)) uid:992 ino:5770 sk:3 cgroup:/system.slice/systemd-resolved.service <->                                            \nudp   UNCONN 0      0          127.0.0.53%lo:53         0.0.0.0:*    users:(("systemd-resolve",pid=673,fd=14)) uid:992 ino:5768 sk:4 cgroup:/system.slice/systemd-resolved.service <->                                            \nudp   UNCONN 0      0      95.217.17.75%eth0:68         0.0.0.0:*    users:(("systemd-network",pid=709,fd=22)) uid:998 ino:2224382 sk:10 cgroup:/system.slice/systemd-networkd.service <->                                        \ntcp   LISTEN 0      4096             0.0.0.0:22         0.0.0.0:*    users:(("sshd",pid=1173,fd=3),("systemd",pid=1,fd=97)) ino:5956 sk:6 cgroup:/system.slice/ssh.socket <->                                                     \ntcp   LISTEN 0      511            127.0.0.1:18789      0.0.0.0:*    users:(("clawdbot-gatewa",pid=169868,fd=22)) ino:2193462 sk:11 cgroup:/user.slice/user-0.slice/user@0.service/app.slice/clawdbot-gateway.service <->         \ntcp   LISTEN 0      511            127.0.0.1:18791      0.0.0.0:*    users:(("clawdbot-gatewa",pid=169868,fd=27)) ino:2193472 sk:12 cgroup:/user.slice/user-0.slice/user@0.service/app.slice/clawdbot-gateway.service <->         \ntcp   LISTEN 0      511            127.0.0.1:18792      0.0.0.0:*    users:(("clawdbot-gatewa",pid=169868,fd=30)) ino:2193473 sk:13 cgroup:/user.slice/user-0.slice/user@0.service/app.slice/clawdbot-gateway.service <->         \ntcp   LISTEN 0      4096       127.0.0.53%lo:53         0.0.0.0:*    users:(("systemd-resolve",pid=673,fd=15)) uid:992 ino:5769 sk:a cgroup:/system.slice/systemd-resolved.service <->                                            \ntcp   LISTEN 0      4096          127.0.0.54:53         0.0.0.0:*    users:(("systemd-resolve",pid=673,fd=17)) uid:992 ino:5771 sk:b cgroup:/system.slice/systemd-resolved.service <->                                            \ntcp   LISTEN 0      511                [::1]:18789         [::]:*    users:(("clawdbot-gatewa",pid=169868,fd=23)) ino:2193463 sk:14 cgroup:/user.slice/user-0.slice/user@0.service/app.slice/clawdbot-gateway.service v6only:1 <->\ntcp   LISTEN 0      4096                [::]:22            [::]:*    users:(("sshd",pid=1173,fd=4),("systemd",pid=1,fd=98)) ino:5958 sk:d cgroup:/system.slice/ssh.socket v6only:1 <->                                            "},
+    "fw.none": {"cmd": "fw:none", "out": "no firewall status command found"},
+    "fs.stat.state_dir": {"cmd": "stat \"/root/.openclaw\"", "out": "missing"},
+    "fs.stat.config": {"cmd": "stat \"/root/.openclaw/openclaw.json\"", "out": "missing"},
+    "fs.stat.credentials_dir": {"cmd": "stat \"/root/.openclaw/credentials\"", "out": "missing"},
+    "fs.stat.sessions_dir": {"cmd": "stat \"/root/.openclaw/sessions\"", "out": "missing"},
+    "fs.stat.auth_profiles": {"cmd": "stat auth-profiles", "out": "none"},
+    "fs.synced_folder": {"cmd": "detect:synced_folder", "out": "state_dir=/root/.openclaw; synced=false"},
+    "fs.symlinks_state": {"cmd": "find:state_dir", "out": "state dir not found or find missing"},
+    "fs.world_writable_state": {"cmd": "find:state_dir", "out": "state dir not found or find missing"},
+    "fs.suid_sgid_state": {"cmd": "find:state_dir", "out": "state dir not found or find missing"},
+    "fs.world_writable_workspace": {"cmd": "find:workspace", "out": "workspace not set or not found"},
+    "fs.suid_sgid_workspace": {"cmd": "find:workspace", "out": "workspace not set or not found"},
+    "skills.state_inventory": {"cmd": "find:state_skills", "out": "state skills dir not found or find missing"},
+    "skills.state_exec_files": {"cmd": "find:state_skills", "out": "state skills dir not found or find missing"},
+    "skills.workspace_inventory": {"cmd": "find:workspace_skills", "out": "workspace skills dir not found or find missing"},
+    "skills.workspace_exec_files": {"cmd": "find:workspace_skills", "out": "workspace skills dir not found or find missing"},
+    "skills.state_pattern_scan": {"cmd": "rg:missing", "out": "rg not available"},
+    "skills.workspace_pattern_scan": {"cmd": "rg:missing", "out": "rg not available"}  }
+}
