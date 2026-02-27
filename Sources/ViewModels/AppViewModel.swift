@@ -8,6 +8,7 @@ final class AppViewModel {
     var isShowingSettings: Bool = false
     var lastError: String?
     var pendingFunctionCalls: [FunctionCallMessage] = []
+    var chatHistory: [ChatMessage] = []
     
     let webSocketService: WebSocketService
     private(set) var webSocketViewModel: WebSocketViewModel?
