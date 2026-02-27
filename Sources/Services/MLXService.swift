@@ -1,6 +1,13 @@
 import Foundation
 import MLX
 
+struct MLXConfiguration: Sendable {
+    var temperature: Double = 0.7
+    var maxTokens: Int = 512
+    
+    static let `default` = MLXConfiguration()
+}
+
 final class MLXService: ObservableObject {
     @Published private(set) var isLoaded = false
     @Published private(set) var isProcessing = false
@@ -10,6 +17,8 @@ final class MLXService: ObservableObject {
     @Published private(set) var availableModels: [String] = []
     
     private var model: MLXModel?
+    private let modelPath: String = "gemma-2b-it"
+    private var configuration: MLXConfiguration = .default
     
     init() {
         loadAvailableModels()
@@ -53,6 +62,10 @@ final class MLXService: ObservableObject {
     }
     
     func generate(prompt: String, parameters: [String: Any] = [:]) async throws -> String {
+        try await generate(prompt: prompt, configuration: configuration)
+    }
+    
+    func generate(prompt: String, configuration: MLXConfiguration) async throws -> String {
         guard isLoaded else {
             throw MLXError.modelNotLoaded
         }
@@ -65,7 +78,7 @@ final class MLXService: ObservableObject {
         do {
             try await Task.sleep(nanoseconds: 1_000_000_000)
             
-            let result = "Generated response for: \(prompt)"
+            let result = "Generated response for: \(prompt) (temp: \(configuration.temperature), max: \(configuration.maxTokens))"
             
             await MainActor.run {
                 isProcessing = false
@@ -78,6 +91,37 @@ final class MLXService: ObservableObject {
                 isProcessing = false
             }
             throw error
+        }
+    }
+    
+    func streamGenerate(prompt: String) -> AsyncStream<String> {
+        AsyncStream { continuation in
+            guard isLoaded else {
+                continuation.finish(throwing: MLXError.modelNotLoaded)
+                return
+            }
+            
+            Task {
+                await MainActor.run {
+                    isProcessing = true
+                    lastError = nil
+                }
+                
+                let words = prompt.split(separator: " ")
+                for (index, word) in words.enumerated() {
+                    let token = "Token \(index): \(word) "
+                    continuation.yield(token)
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
+                
+                let finalToken = "[EOS]"
+                continuation.yield(finalToken)
+                continuation.finish()
+                
+                await MainActor.run {
+                    isProcessing = false
+                }
+            }
         }
     }
     
