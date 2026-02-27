@@ -29,6 +29,10 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
+	<key>NSCalendarsUsageDescription</key>
+	<string>MLX-Claw needs access to your calendar to create, view, and delete calendar events.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>MLX-Claw needs full access to your calendar to create, view, and delete calendar events.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>
