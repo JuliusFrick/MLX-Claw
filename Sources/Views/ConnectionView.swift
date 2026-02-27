@@ -4,73 +4,95 @@ struct ConnectionView: View {
     @ObservedObject var viewModel: ConnectionViewModel
     
     @State private var serverURL: String = ""
-    @State private var showSecureToggle: Bool = false
+    @State private var isPulsing: Bool = false
     
     var body: some View {
-        VStack(spacing: 24) {
-            headerSection
+        ZStack {
+            AppColors.background
+                .ignoresSafeArea()
             
-            inputSection
-            
-            connectionButton
-            
-            statusSection
+            VStack(spacing: AppSpacing.xl) {
+                headerSection
+                
+                inputSection
+                
+                connectButton
+                
+                statusSection
+                
+                Spacer()
+            }
+            .padding(.horizontal, AppSpacing.l)
+            .padding(.top, AppSpacing.xxl)
         }
-        .padding(24)
         .onAppear {
             serverURL = viewModel.savedServerURL
+            if viewModel.connectionStatus == .connecting {
+                isPulsing = true
+            }
+        }
+        .onChange(of: viewModel.connectionStatus) { _, newStatus in
+            isPulsing = newStatus == .connecting
         }
     }
     
     private var headerSection: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "link.circle.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(Color(hex: "007AFF"))
+        VStack(spacing: AppSpacing.m) {
+            ZStack {
+                Circle()
+                    .fill(AppColors.primaryGradient)
+                    .frame(width: 100, height: 100)
+                    .shadow(color: AppColors.primary.opacity(0.4), radius: 20, x: 0, y: 10)
+                
+                Image(systemName: "claw.hammer.fill")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.white)
+            }
+            .scaleEffect(isPulsing ? 1.05 : 1.0)
+            .animation(
+                viewModel.connectionStatus == .connecting ?
+                    .easeInOut(duration: 1.0).repeatForever(autoreverses: true) :
+                    .default,
+                value: isPulsing
+            )
             
-            Text("Connect to Server")
-                .font(.system(size: 28, weight: .bold, design: .default))
-            
-            Text("Enter your OpenClaw WebSocket URL")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
+            VStack(spacing: AppSpacing.xs) {
+                Text("MLX-Claw")
+                    .font(AppTypography.largeTitle)
+                    .foregroundColor(AppColors.textPrimary)
+                
+                Text("Connect to your server")
+                    .font(AppTypography.body)
+                    .foregroundColor(AppColors.textSecondary)
+            }
         }
+        .padding(.top, AppSpacing.xl)
     }
     
     private var inputSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
             Text("Server URL")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
+                .font(AppTypography.subheadline)
+                .foregroundColor(AppColors.textSecondary)
             
-            HStack(spacing: 12) {
-                TextField("ws://localhost:8080", text: $serverURL)
-                    .textFieldStyle(.roundedBorder)
-                    .textContentType(.URL)
-                    .keyboardType(.URL)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                    .onChange(of: serverURL) { _, newValue in
-                        viewModel.validateURL(newValue)
-                    }
-                
-                Button {
-                    showSecureToggle.toggle()
-                } label: {
-                    Image(systemName: showSecureToggle ? "eye.slash.fill" : "eye.fill")
-                        .foregroundStyle(Color(hex: "5856D6"))
+            AppTextField(text: $serverURL, placeholder: "wss://localhost:8080")
+                .textContentType(.URL)
+                .keyboardType(.URL)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+                .onChange(of: serverURL) { _, newValue in
+                    viewModel.validateURL(newValue)
                 }
-            }
             
             if !viewModel.isURLValid && !serverURL.isEmpty {
                 Text("Invalid WebSocket URL format")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(hex: "FF3B30"))
+                    .font(AppTypography.caption1)
+                    .foregroundColor(AppColors.error)
             }
         }
     }
     
-    private var connectionButton: some View {
+    private var connectButton: some View {
         Button {
             if viewModel.isConnected {
                 viewModel.disconnect()
@@ -78,98 +100,52 @@ struct ConnectionView: View {
                 viewModel.connect(to: serverURL)
             }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppSpacing.s) {
                 if viewModel.connectionStatus == .connecting {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.8)
+                        .scaleEffect(0.9)
                 } else {
-                    Image(systemName: viewModel.isConnected ? "xmark.circle.fill" : "link.circle.fill")
+                    Image(systemName: viewModel.isConnected ? "xmark.circle.fill" : "wifi")
+                        .font(.system(size: 18, weight: .semibold))
                 }
                 
                 Text(viewModel.isConnected ? "Disconnect" : (viewModel.connectionStatus == .connecting ? "Connecting..." : "Connect"))
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppTypography.headline)
             }
+            .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(viewModel.isConnected ? Color(hex: "FF3B30") : Color(hex: "007AFF"))
-            .foregroundStyle(.white)
-            .cornerRadius(12)
+            .padding(.vertical, AppSpacing.m)
+            .background(
+                viewModel.isConnected ?
+                    AppColors.error :
+                    LinearGradient(
+                        colors: [AppColors.primary, AppColors.secondary],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+            )
+            .cornerRadius(AppCornerRadius.medium)
+            .shadow(
+                color: (viewModel.isConnected ? AppColors.error : AppColors.primary).opacity(0.3),
+                radius: 8,
+                x: 0,
+                y: 4
+            )
         }
         .disabled(viewModel.connectionStatus == .connecting || serverURL.isEmpty)
         .opacity((serverURL.isEmpty && !viewModel.isConnected) ? 0.5 : 1.0)
     }
     
     private var statusSection: some View {
-        ConnectionStatusBadge(status: viewModel.connectionStatus)
+        ConnectionStatusBadge(status: {
+            switch viewModel.connectionStatus {
+            case .disconnected: return .disconnected
+            case .connecting: return .connecting
+            case .connected: return .connected
+            }
+        }())
     }
-}
-
-struct ConnectionStatusBadge: View {
-    let status: ConnectionStatus
-    
-    @State private var isPulsing: Bool = false
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 12, height: 12)
-                .scaleEffect(isPulsing && status == .connecting ? 1.3 : 1.0)
-                .animation(
-                    status == .connecting ?
-                        .easeInOut(duration: 0.8).repeatForever(autoreverses: true) :
-                        .default,
-                    value: isPulsing
-                )
-                .onAppear {
-                    if status == .connecting {
-                        isPulsing = true
-                    }
-                }
-                .onChange(of: status) { _, newStatus in
-                    isPulsing = newStatus == .connecting
-                }
-            
-            Text(statusText)
-                .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(statusColor)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(statusColor.opacity(0.1))
-        )
-    }
-    
-    private var statusColor: Color {
-        switch status {
-        case .disconnected:
-            return Color(hex: "FF3B30")
-        case .connecting:
-            return Color(hex: "FFC107")
-        case .connected:
-            return Color(hex: "34C759")
-        }
-    }
-    
-    private var statusText: String {
-        switch status {
-        case .disconnected:
-            return "Disconnected"
-        case .connecting:
-            return "Connecting..."
-        case .connected:
-            return "Connected"
-        }
-    }
-}
-
-enum ConnectionStatus {
-    case disconnected
-    case connecting
-    case connected
 }
 
 class ConnectionViewModel: ObservableObject {
@@ -209,30 +185,10 @@ class ConnectionViewModel: ObservableObject {
     }
 }
 
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3:
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6:
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8:
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
+enum ConnectionStatus {
+    case disconnected
+    case connecting
+    case connected
 }
 
 #Preview {
