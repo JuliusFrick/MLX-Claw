@@ -1,0 +1,22 @@
+# Xcode
+.DS_Store
+build/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log

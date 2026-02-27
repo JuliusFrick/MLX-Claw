@@ -1,0 +1,53 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - function_body_length
+  - type_body_length
+  - file_length
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - closure_spacing
+  - explicit_init
+  - first_where
+  - sorted_first_last
+  - redundant_nil_coalescing
+  - contains_over_first_not_nil
+  - fallthrough
+  - fatal_error_message
+  - multiline_parameters
+  - unneeded_parentheses_in_closure_argument
+
+excluded:
+  - .build
+  - Pods
+  - DerivedData
+  - Resources
+
+identifier_name:
+  min_length:
+    warning: 2
+  max_length:
+    warning: 40
+    error: 60
+
+type_name:
+  min_length: 3
+  max_length: 40
+
+function_body_length:
+  warning: 50
+  error: 100
+
+file_length:
+  warning: 500
+  error: 1000
+
+type_body_length:
+  warning: 300
+  error: 500
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25

@@ -1,0 +1,33 @@
+--swiftversion 5.9
+
+--indent 4
+--indentcase false
+--trimwhitespace always
+--nospaceoperators ..<,...
+--ranges spaced
+--empty void
+--commas always
+--semicolons never
+--patternlet inline
+--elseposition same-line
+--wrapcollections before-first
+--wraparguments before-first
+--wrapparameters before-first
+--maxwidth 120
+--funcattributes prev-line
+--typeattributes prev-line
+--varattributes prev-line
+--releasesyntax deprecated
+--header strip
+
+--enable isEmpty
+--enable redundantSelf
+--enable sortedImports
+--enable trailingCommas
+--enable wrapMultilineStatementBraces
+--enable foldClosures
+--enable sortImports
+
+--disable unusedArguments
+--disable redundantReturn
+--disable duplicateImports

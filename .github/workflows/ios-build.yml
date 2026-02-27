@@ -1,0 +1,45 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+    
+    - name: Cache Carthage
+      uses: actions/cache@v3
+      with:
+        path: Carthage
+        key: ${{ runner.os }}-carthage-${{ hashFiles('**/Cartfile.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-carthage-
+    
+    - name: Install dependencies
+      run: |
+        which carthage || brew install carthage
+        carthage bootstrap --platform iOS --use-ssh
+    
+    - name: Build
+      run: |
+        xcodegen generate || echo "project.yml not found, using workspace"
+        xcodebuild -workspace MLXClaw.xcworkspace -scheme MLXClaw -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15' build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: build-log
+        path: build.log
