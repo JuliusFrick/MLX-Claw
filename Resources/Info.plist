@@ -33,6 +33,19 @@
 	<string>MLX-Claw needs access to your calendar to create, view, and delete calendar events.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>MLX-Claw needs full access to your calendar to create, view, and delete calendar events.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MLX-Claw needs access to your camera to capture photos and videos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MLX-Claw needs access to your microphone to record audio.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MLX-Claw needs access to your photo library to save and select photos.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>
