@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 
 @Observable
 final class AppViewModel {
@@ -9,19 +10,52 @@ final class AppViewModel {
     var lastError: String?
     var pendingFunctionCalls: [FunctionCallMessage] = []
     var chatHistory: [ChatMessage] = []
+    var pendingQueueCount: Int = 0
+    var isSyncing: Bool = false
     
-    let webSocketService: WebSocketService
-    private(set) var webSocketViewModel: WebSocketViewModel?
+    // Use OpenClawService for proper integration
+    let openClawService: OpenClawService
+    let queueService = QueueService.shared
+    
+    private var cancellables = Set<AnyCancellable>()
     
     init() {
-        self.webSocketService = WebSocketService()
-        setupWebSocket()
+        self.openClawService = OpenClawService()
+        setupBindings()
     }
     
-    private func setupWebSocket() {
-        let wsViewModel = WebSocketViewModel(service: webSocketService)
-        self.webSocketViewModel = wsViewModel
-        webSocketService.delegate = wsViewModel
+    private func setupBindings() {
+        // Bind connection state from OpenClawService
+        openClawService.$connectionState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.connectionState = state
+            }
+            .store(in: &cancellables)
+        
+        // Bind errors
+        openClawService.$lastError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] error in
+                self?.lastError = error
+            }
+            .store(in: &cancellables)
+        
+        // Bind queue count
+        queueService.$pendingCalls
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] calls in
+                self?.pendingQueueCount = calls.count
+            }
+            .store(in: &cancellables)
+        
+        // Bind syncing state
+        queueService.$isSyncing
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] syncing in
+                self?.isSyncing = syncing
+            }
+            .store(in: &cancellables)
     }
     
     func connect() {
@@ -31,11 +65,11 @@ final class AppViewModel {
         }
         
         lastError = nil
-        webSocketService.connect(to: url)
+        openClawService.connect(to: url)
     }
     
     func disconnect() {
-        webSocketService.disconnect()
+        openClawService.disconnect()
     }
     
     func toggleConnection() {
