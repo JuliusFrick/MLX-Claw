@@ -26,6 +26,7 @@ enum AppColors {
     static let connected = Color(hex: "34C759")
     static let connecting = Color(hex: "FF9500")
     static let disconnected = Color(hex: "FF3B30")
+    static let offline = Color(hex: "FF9500")
     
     // Gradient
     static let primaryGradient = LinearGradient(
@@ -149,6 +150,41 @@ struct ConnectionStatusBadge: View {
     }
 }
 
+// Offline Indicator Badge
+struct OfflineIndicator: View {
+    let pendingCount: Int
+    let isSyncing: Bool
+    
+    var body: some View {
+        HStack(spacing: AppSpacing.s) {
+            if isSyncing {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: AppColors.offline))
+                    .scaleEffect(0.7)
+            } else {
+                Image(systemName: "wifi.slash")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            
+            if isSyncing {
+                Text("Syncing...")
+                    .font(AppTypography.caption1)
+            } else if pendingCount > 0 {
+                Text("\(pendingCount) pending")
+                    .font(AppTypography.caption1)
+            } else {
+                Text("Offline")
+                    .font(AppTypography.caption1)
+            }
+        }
+        .foregroundColor(AppColors.offline)
+        .padding(.horizontal, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .background(AppColors.offline.opacity(0.1))
+        .cornerRadius(AppCornerRadius.full)
+    }
+}
+
 // Function Call Card
 struct FunctionCallCard: View {
     let title: String
@@ -157,7 +193,7 @@ struct FunctionCallCard: View {
     let status: FunctionStatus
     
     enum FunctionStatus {
-        case pending, executing, success, failed
+        case pending, executing, success, failed, queued
     }
     
     var body: some View {
@@ -197,6 +233,7 @@ struct FunctionCallCard: View {
             case .executing: return (AppColors.primary, "arrow.triangle.2.circlepath")
             case .success: return (AppColors.connected, "checkmark.circle.fill")
             case .failed: return (AppColors.error, "xmark.circle.fill")
+            case .queued: return (AppColors.offline, "tray.full")
             }
         }()
         
@@ -246,72 +283,35 @@ struct PrimaryButton: View {
 struct AppTextField: View {
     let placeholder: String
     @Binding var text: String
-    var isSecure: Bool = false
     
     var body: some View {
-        Group {
-            if isSecure {
-                SecureField(placeholder, text: $text)
-            } else {
-                TextField(placeholder, text: $text)
+        TextField(placeholder, text: $text)
+            .font(AppTypography.body)
+            .foregroundColor(AppColors.textPrimary)
+            .padding(AppSpacing.m)
+            .background(AppColors.surfaceSecondary)
+            .cornerRadius(AppCornerRadius.medium)
+    }
+}
+
+// Settings Section
+struct SettingsSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
+            Text(title)
+                .font(AppTypography.caption1)
+                .foregroundColor(AppColors.textTertiary)
+                .textCase(.uppercase)
+            
+            VStack(spacing: AppSpacing.s) {
+                content
             }
+            .padding(AppSpacing.m)
+            .background(AppColors.surface)
+            .cornerRadius(AppCornerRadius.medium)
         }
-        .font(AppTypography.body)
-        .foregroundColor(AppColors.textPrimary)
-        .padding(AppSpacing.m)
-        .background(AppColors.surfaceSecondary)
-        .cornerRadius(AppCornerRadius.medium)
     }
-}
-
-// MARK: - Color Extension
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 0)
-        }
-        
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
-
-// MARK: - Preview
-#Preview("Design System") {
-    VStack(spacing: 20) {
-        ConnectionStatusBadge(status: .connected)
-        ConnectionStatusBadge(status: .connecting)
-        ConnectionStatusBadge(status: .disconnected)
-        
-        Divider()
-        
-        FunctionCallCard(
-            title: "Create Calendar Event",
-            subtitle: "Meeting with Marco at 2pm",
-            timestamp: Date(),
-            status: .executing
-        )
-        
-        PrimaryButton("Connect", icon: "wifi") {}
-        
-        AppTextField(text: .constant(""), placeholder: "Server URL")
-    }
-    .padding()
-    .background(AppColors.background)
 }
