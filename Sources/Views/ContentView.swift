@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var appViewModel: AppViewModel
+    @StateObject private var queueService = QueueService.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -28,6 +29,14 @@ struct ContentView: View {
             
             Spacer()
             
+            // Show offline indicator when not connected
+            if appViewModel.connectionState != .connected {
+                OfflineIndicator(
+                    pendingCount: queueService.count,
+                    isSyncing: queueService.isSyncing
+                )
+            }
+            
             ConnectionStatusBadge(status: connectionStatus)
         }
         .padding(.horizontal, AppSpacing.m)
@@ -47,6 +56,11 @@ struct ContentView: View {
         ScrollView {
             VStack(spacing: AppSpacing.m) {
                 if appViewModel.connectionState == .connected {
+                    // Show queued calls count if any
+                    if queueService.count > 0 {
+                        queuedCallsBanner
+                    }
+                    
                     Text("Chat interface coming soon")
                         .font(AppTypography.body)
                         .foregroundColor(AppColors.textSecondary)
@@ -70,6 +84,28 @@ struct ContentView: View {
             .padding(.vertical, AppSpacing.l)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var queuedCallsBanner: some View {
+        HStack {
+            Image(systemName: "tray.full")
+                .foregroundColor(AppColors.offline)
+            
+            Text("\(queueService.count) call\(queueService.count == 1 ? "" : "s") queued")
+                .font(AppTypography.subheadline)
+                .foregroundColor(AppColors.offline)
+            
+            Spacer()
+            
+            if queueService.isSyncing {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: AppColors.offline))
+                    .scaleEffect(0.8)
+            }
+        }
+        .padding(AppSpacing.m)
+        .background(AppColors.offline.opacity(0.1))
+        .cornerRadius(AppCornerRadius.medium)
     }
     
     private var inputArea: some View {
