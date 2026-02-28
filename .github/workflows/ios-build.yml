@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macOS-latest
     
     steps:
     - name: Checkout
@@ -19,26 +19,12 @@ jobs:
       with:
         xcode-version: '15.0'
     
-    - name: Cache Carthage
-      uses: actions/cache@v3
-      with:
-        path: Carthage
-        key: ${{ runner.os }}-carthage-${{ hashFiles('**/Cartfile.resolved') }}
-        restore-keys: |
-          ${{ runner.os }}-carthage-
-    
-    - name: Install dependencies
-      run: |
-        which carthage || brew install carthage
-        carthage bootstrap --platform iOS --use-ssh
-    
     - name: Build
       run: |
-        xcodegen generate || echo "project.yml not found, using workspace"
-        xcodebuild -workspace MLXClaw.xcworkspace -scheme MLXClaw -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15' build
+        xcodebuild -project MLXClaw.xcodeproj -scheme MLXClaw -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15' build
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: failure()
       with:
         name: build-log
