@@ -2,13 +2,17 @@ import Foundation
 import Combine
 
 final class OpenClawService: ObservableObject {
+    static var shared: OpenClawService?
+    
     @Published private(set) var connectionState: ConnectionState = .disconnected
     @Published private(set) var isProcessing = false
     @Published private(set) var lastError: String?
+    @Published private(set) var pendingQueueCount: Int = 0
 
     let webSocketService: WebSocketService
     let mlxService: MLXService
     let functionRegistry: FunctionRegistry
+    let queueService = QueueService.shared
 
     private var serverURL: URL?
     private var cancellables = Set<AnyCancellable>()
@@ -24,6 +28,9 @@ final class OpenClawService: ObservableObject {
 
         webSocketService.delegate = self
         setupBindings()
+        
+        // Set singleton
+        OpenClawService.shared = self
     }
 
     private func setupBindings() {
@@ -31,6 +38,8 @@ final class OpenClawService: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 self?.connectionState = state
+                // Notify about connection state change
+                NotificationCenter.default.post(name: .connectionStateChanged, object: state)
             }
             .store(in: &cancellables)
 
@@ -45,6 +54,14 @@ final class OpenClawService: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] error in
                 self?.lastError = error
+            }
+            .store(in: &cancellables)
+        
+        // Bind queue count
+        queueService.$pendingCalls
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] calls in
+                self?.pendingQueueCount = calls.count
             }
             .store(in: &cancellables)
     }
@@ -108,6 +125,37 @@ final class OpenClawService: ObservableObject {
     }
 
     func handleFunctionCall(_ call: FunctionCall) async {
+        // Check if offline - queue instead
+        guard connectionState.isConnected else {
+            queueOfflineCall(call)
+            return
+        }
+        
+        await executeFunctionCallOnline(call)
+    }
+    
+    private func queueOfflineCall(_ call: FunctionCall) {
+        let queuedCall = QueuedFunctionCall(
+            id: call.id,
+            name: call.name,
+            parameters: call.parameters
+        )
+        queueService.enqueue(queuedCall)
+        
+        // Send queued confirmation
+        let queuedMessage = OpenClawMessage.functionResult(
+            FunctionResultMessage(
+                id: call.id,
+                status: "queued",
+                result: AnyCodable(["message": "Function call queued for offline execution"]),
+                error: nil
+            )
+        )
+        // In a real app, we might want to notify the UI differently for queued calls
+        lastError = nil
+    }
+    
+    private func executeFunctionCallOnline(_ call: FunctionCall) async {
         var updatedCall = call
         updatedCall.status = .executing
 
@@ -146,6 +194,22 @@ final class OpenClawService: ObservableObject {
             )
             webSocketService.send(errorMessage)
         }
+    }
+
+    /// Execute a queued call (called when syncing)
+    func executeQueuedCall(_ call: QueuedFunctionCall) async throws {
+        guard connectionState.isConnected else {
+            throw QueueError.offline
+        }
+        
+        let functionCall = FunctionCall(
+            id: call.id,
+            name: call.name,
+            parameters: call.parameters,
+            status: .pending
+        )
+        
+        await executeFunctionCallOnline(functionCall)
     }
 
     func sendFunctionResult(_ result: FunctionResultMessage) {
@@ -192,6 +256,11 @@ extension OpenClawService: WebSocketServiceDelegate {
                 try? await mlxService.loadModel(defaultModel)
             }
         }
+        
+        // Trigger queue sync when connected
+        Task {
+            await queueService.syncPendingCalls()
+        }
     }
 
     func webSocketDidDisconnect(error: Error?) {
@@ -199,28 +268,11 @@ extension OpenClawService: WebSocketServiceDelegate {
             lastError = error.localizedDescription
         }
     }
+}
 
-    func webSocketDidReceiveMessage(_ message: OpenClawMessage) {
-        switch message {
-        case .functionCall(let functionCallMessage):
-            let call = FunctionCall(
-                id: functionCallMessage.id,
-                name: functionCallMessage.name,
-                parameters: functionCallMessage.parameters,
-                status: .pending
-            )
-            Task {
-                await handleFunctionCall(call)
-            }
+// MARK: - Errors
 
-        case .functionResult:
-            break
-
-        case .ping:
-            webSocketService.send(.pong)
-
-        case .pong:
-            break
-        }
-    }
+enum QueueError: Error {
+    case offline
+    case executionFailed
 }
