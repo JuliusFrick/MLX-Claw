@@ -11,7 +11,7 @@ struct FunctionCallView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: AppSpacing.l) {
                     functionHeader
                     
                     parametersSection
@@ -22,8 +22,9 @@ struct FunctionCallView: View {
                         resultSection
                     }
                 }
-                .padding(16)
+                .padding(AppSpacing.m)
             }
+            .background(AppColors.background)
             .navigationTitle("Function Call")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -32,46 +33,48 @@ struct FunctionCallView: View {
                         viewModel.cancel()
                         dismiss()
                     }
-                    .foregroundStyle(Color(hex: "FF3B30"))
+                    .foregroundStyle(AppColors.error)
                 }
             }
         }
     }
     
     private var functionHeader: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppSpacing.m) {
             Image(systemName: "function")
                 .font(.system(size: 40))
-                .foregroundStyle(Color(hex: "007AFF"))
+                .foregroundStyle(AppColors.primary)
             
             Text(functionCall.name)
-                .font(.system(size: 20, weight: .semibold))
+                .font(AppTypography.title3)
+                .foregroundColor(AppColors.textPrimary)
             
-            HStack(spacing: 4) {
+            HStack(spacing: AppSpacing.xs) {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 8, height: 8)
                 
                 Text(functionCall.status.rawValue.capitalized)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
+                    .font(AppTypography.caption1)
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, AppSpacing.m)
     }
     
     private var parametersSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
             Text("Parameters")
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypography.headline)
+                .foregroundColor(AppColors.textPrimary)
             
             if functionCall.parameters.isEmpty {
                 Text("No parameters")
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 8)
+                    .font(AppTypography.body)
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.vertical, AppSpacing.s)
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: AppSpacing.s) {
                     ForEach(Array(functionCall.parameters.keys.sorted()), id: \.self) { key in
                         if let value = functionCall.parameters[key] {
                             ParameterRow(key: key, value: value)
@@ -81,15 +84,13 @@ struct FunctionCallView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: "F2F2F7").opacity(0.5))
-        )
+        .padding(AppSpacing.m)
+        .background(AppColors.surface)
+        .cornerRadius(AppCornerRadius.medium)
     }
     
     private var actionButtons: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppSpacing.m) {
             Button {
                 viewModel.cancel()
                 dismiss()
@@ -98,17 +99,17 @@ struct FunctionCallView: View {
                     Image(systemName: "xmark")
                     Text("Cancel")
                 }
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypography.headline)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color(hex: "FF3B30"))
-                .foregroundStyle(.white)
-                .cornerRadius(12)
+                .padding(.vertical, AppSpacing.m)
+                .background(AppColors.error)
+                .foregroundColor(.white)
+                .cornerRadius(AppCornerRadius.medium)
             }
             
             Button {
                 viewModel.execute()
-                withAnimation {
+                withAnimation(AppAnimation.standard) {
                     showResult = true
                 }
             } label: {
@@ -116,87 +117,82 @@ struct FunctionCallView: View {
                     Image(systemName: "play.fill")
                     Text("Execute")
                 }
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypography.headline)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(viewModel.isExecuting ? Color.gray : Color(hex: "34C759"))
-                .foregroundStyle(.white)
-                .cornerRadius(12)
+                .padding(.vertical, AppSpacing.m)
+                .background(viewModel.isExecuting ? AppColors.textTertiary : AppColors.connected)
+                .foregroundColor(.white)
+                .cornerRadius(AppCornerRadius.medium)
             }
             .disabled(viewModel.isExecuting)
         }
     }
     
     private var resultSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
             HStack {
                 Text("Result")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppTypography.headline)
+                    .foregroundColor(AppColors.textPrimary)
                 
                 Spacer()
                 
                 Button {
                     copyResultToClipboard()
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppSpacing.xs) {
                         Image(systemName: copied ? "checkmark" : "doc.on.doc")
                         Text(copied ? "Copied!" : "Copy")
                     }
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color(hex: "007AFF"))
+                    .font(AppTypography.caption1)
+                    .foregroundColor(AppColors.primary)
                 }
             }
             
             if viewModel.isExecuting {
                 HStack {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle())
+                        .progressViewStyle(CircularProgressViewStyle(tint: AppColors.textSecondary))
                     Text("Executing...")
-                        .font(.system(size: 15))
-                        .foregroundStyle(.secondary)
+                        .font(AppTypography.body)
+                        .foregroundColor(AppColors.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 20)
+                .padding(.vertical, AppSpacing.l)
             } else if let result = viewModel.result {
                 Text(result)
-                    .font(.system(size: 15, design: .monospaced))
+                    .font(AppTypography.monospace)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(hex: "1C1C1E").opacity(0.1))
-                    )
+                    .padding(AppSpacing.m)
+                    .background(AppColors.surface)
+                    .cornerRadius(AppCornerRadius.small)
             } else if let error = viewModel.error {
                 Text(error)
-                    .font(.system(size: 15))
-                    .foregroundStyle(Color(hex: "FF3B30"))
+                    .font(AppTypography.body)
+                    .foregroundColor(AppColors.error)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(hex: "FF3B30").opacity(0.1))
-                    )
+                    .padding(AppSpacing.m)
+                    .background(AppColors.error.opacity(0.1))
+                    .cornerRadius(AppCornerRadius.small)
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: "F2F2F7").opacity(0.5))
-        )
+        .padding(AppSpacing.m)
+        .background(AppColors.surface)
+        .cornerRadius(AppCornerRadius.medium)
     }
     
     private var statusColor: Color {
         switch functionCall.status {
         case .pending:
-            return Color(hex: "FFC107")
+            return AppColors.warning
         case .executing:
-            return Color(hex: "007AFF")
+            return AppColors.primary
         case .success:
-            return Color(hex: "34C759")
+            return AppColors.connected
         case .error:
-            return Color(hex: "FF3B30")
+            return AppColors.error
         case .cancelled:
-            return Color(hex: "8E8E93")
+            return AppColors.textTertiary
         }
     }
     
@@ -216,18 +212,18 @@ struct ParameterRow: View {
     let value: AnyCodable
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: AppSpacing.m) {
             Text(key)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color(hex: "5856D6"))
+                .font(AppTypography.subheadline)
+                .foregroundColor(AppColors.secondary)
                 .frame(width: 100, alignment: .leading)
             
             Text(parameterValue)
-                .font(.system(size: 15))
-                .foregroundStyle(.primary)
+                .font(AppTypography.body)
+                .foregroundColor(AppColors.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, AppSpacing.xs)
     }
     
     private var parameterValue: String {
@@ -296,42 +292,19 @@ class FunctionCallViewModel: ObservableObject {
     }
 }
 
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3:
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6:
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8:
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (255, 0, 0, 0)
-        }
-        
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
-
 #Preview {
     FunctionCallView(
         functionCall: FunctionCall(
-            id: "123",
-            name: "example_function",
-            parameters: ["param1": AnyCodable("value1"), "param2": AnyCodable(42)]
+            id: "1",
+            name: "sendMessage",
+            parameters: ["to": AnyCodable("John"), "message": AnyCodable("Hello!")],
+            status: .pending
         ),
-        viewModel: FunctionCallViewModel(
-            functionCall: FunctionCall(id: "123", name: "test", parameters: [:])
-        )
+        viewModel: FunctionCallViewModel(functionCall: FunctionCall(
+            id: "1",
+            name: "sendMessage",
+            parameters: [:],
+            status: .pending
+        ))
     )
 }
