@@ -20,6 +20,13 @@ final class WebSocketService: NSObject, ObservableObject {
     
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let keychainService = KeychainService.shared
+    
+    // Keychain keys
+    private enum KeychainKeys {
+        static let authToken = "websocket_auth_token"
+        static let serverURL = "websocket_server_url"
+    }
     
     override init() {
         super.init()
@@ -34,11 +41,22 @@ final class WebSocketService: NSObject, ObservableObject {
         var request = URLRequest(url: url)
         request.timeoutInterval = 30
         
+        // Add auth token if available
+        if let tokenData = try? keychainService.load(key: KeychainKeys.authToken),
+           let token = String(data: tokenData, encoding: .utf8) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
         socket = WebSocket(request: request)
         socket?.delegate = self
         
         connectionState = .connecting
         socket?.connect()
+        
+        // Save server URL
+        if let urlString = url.absoluteString.data(using: .utf8) {
+            try? keychainService.save(key: KeychainKeys.serverURL, data: urlString)
+        }
     }
     
     func disconnect() {
@@ -78,6 +96,33 @@ final class WebSocketService: NSObject, ObservableObject {
     func sendPing() {
         send(.ping)
     }
+    
+    // MARK: - Token Management
+    
+    func saveAuthToken(_ token: String) {
+        guard let data = token.data(using: .utf8) else { return }
+        try? keychainService.save(key: KeychainKeys.authToken, data: data)
+    }
+    
+    func getAuthToken() -> String? {
+        guard let data = try? keychainService.load(key: KeychainKeys.authToken) else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+    
+    func deleteAuthToken() {
+        try? keychainService.delete(key: KeychainKeys.authToken)
+    }
+    
+    func getLastServerURL() -> String? {
+        guard let data = try? keychainService.load(key: KeychainKeys.serverURL) else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+    
+    // MARK: - Reconnection
     
     private func scheduleReconnect() {
         guard reconnectAttempts < maxReconnectAttempts,
