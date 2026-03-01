@@ -1,6 +1,8 @@
 import SwiftUI
+import Combine
 
 struct ChatView: View {
+    @EnvironmentObject var appViewModel: AppViewModel
     @StateObject private var viewModel = ChatViewModel()
     @FocusState private var isInputFocused: Bool
     
@@ -22,6 +24,9 @@ struct ChatView: View {
             .focused($isInputFocused)
         }
         .background(AppColors.background)
+        .onAppear {
+            viewModel.setOpenClawService(appViewModel.openClawService)
+        }
     }
 }
 
@@ -33,9 +38,13 @@ struct MessageListView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: AppSpacing.m) {
-                    ForEach(messages) { message in
-                        MessageBubbleView(message: message)
-                            .id(message.id)
+                    if messages.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(messages) { message in
+                            MessageBubbleView(message: message)
+                                .id(message.id)
+                        }
                     }
                     
                     if isTyping {
@@ -57,6 +66,24 @@ struct MessageListView: View {
                 }
             }
         }
+    }
+    
+    private var emptyState: some View {
+        VStack(spacing: AppSpacing.m) {
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 48))
+                .foregroundColor(AppColors.textTertiary)
+            
+            Text("Start a conversation")
+                .font(AppTypography.headline)
+                .foregroundColor(AppColors.textSecondary)
+            
+            Text("Your messages will appear here")
+                .font(AppTypography.body)
+                .foregroundColor(AppColors.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, AppSpacing.xxl)
     }
     
     private func scrollToBottom(proxy: ScrollViewProxy) {
@@ -194,39 +221,85 @@ struct InputView: View {
     }
 }
 
+@MainActor
 class ChatViewModel: ObservableObject {
     @Published var messages: [ChatMessage] = []
     @Published var inputText: String = ""
     @Published var isProcessing: Bool = false
     @Published var isTyping: Bool = false
+    @Published var errorMessage: String?
+    
+    private var openClawService: OpenClawService?
+    private var cancellables = Set<AnyCancellable>()
+    
+    func setOpenClawService(_ service: OpenClawService) {
+        self.openClawService = service
+        
+        // Bind to service state
+        service.$isProcessing
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$isProcessing)
+        
+        service.$lastError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] error in
+                self?.errorMessage = error
+            }
+            .store(in: &cancellables)
+    }
     
     func sendMessage() {
         let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
+        guard let service = openClawService else {
+            errorMessage = "Service not connected"
+            return
+        }
         
+        // Add user message
         let userMessage = ChatMessage(role: .user, content: trimmedText)
         messages.append(userMessage)
         inputText = ""
         
         isProcessing = true
+        isTyping = true
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.isTyping = true
+        // Send via OpenClawService
+        Task {
+            do {
+                await service.sendMessage(trimmedText)
+                
+                // For demo, add a response after a delay
+                // In production, this would come from WebSocket
+                try await Task.sleep(nanoseconds: 1_500_000_000)
+                
+                await MainActor.run {
+                    isTyping = false
+                    isProcessing = false
+                    
+                    // Add assistant response
+                    let assistantMessage = ChatMessage(
+                        role: .assistant,
+                        content: "Message sent to server! In production, this would be the MLX-generated response."
+                    )
+                    messages.append(assistantMessage)
+                }
+            } catch {
+                await MainActor.run {
+                    isTyping = false
+                    isProcessing = false
+                    errorMessage = error.localizedDescription
+                }
+            }
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.isTyping = false
-            self?.isProcessing = false
-            
-            let assistantMessage = ChatMessage(
-                role: .assistant,
-                content: "This is a demo response. The MLX service would generate the actual response here."
-            )
-            self?.messages.append(assistantMessage)
-        }
+    }
+    
+    func clearError() {
+        errorMessage = nil
     }
 }
 
 #Preview("Chat View") {
     ChatView()
+        .environmentObject(AppViewModel())
 }
